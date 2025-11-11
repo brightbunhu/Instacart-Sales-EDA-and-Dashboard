@@ -11,7 +11,7 @@ st.title("🛒 Instacart Dataset Dashboard")
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("instacart_databy_me.csv")
+    df = pd.read_csv("data.csv")
     return df
 
 df = load_data()
@@ -227,5 +227,6 @@ col1.markdown("Email: brightbunhu4@gmail.com")
 col2.markdown("Phone: 0783234270")
 
 st.markdown("---")
+
 
 
