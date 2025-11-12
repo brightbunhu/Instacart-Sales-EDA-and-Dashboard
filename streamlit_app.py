@@ -205,7 +205,7 @@ fig_table = go.Figure(data=[go.Table(
     cells=dict(values=[table_data_display[col] for col in table_data_display.columns], fill_color='black', align='left', font=dict(color='white'))
 )])
 fig_table.update_layout(title='Orders Table', paper_bgcolor='black')
-st.plotly_chart(fig_table, use_container_width=True)
+st.plotly_chart(fig_table, width='stretch')
 st.markdown("---")
 
 
