@@ -14,29 +14,45 @@ st.title("🛒 Instacart Dataset Dashboard")
 # -----------------------------
 # Load data
 # -----------------------------
-@st.cache_data
 def load_data():
     data_folder = "data"
     
-    if os.path.exists(data_folder):
-        files = [f for f in os.listdir(data_folder) if f.endswith('.csv')]
-        if not files:
-            st.error(f"No CSV files found in '{data_folder}'.")
-            st.stop()
-        dfs = []
-        progress_bar = st.progress(0)
+    if not os.path.exists(data_folder):
+        st.error(f"Data folder '{data_folder}' not found! Please ensure the data folder is in the repository root.")
+        st.stop()
+        return None
+    
+    files = [f for f in os.listdir(data_folder) if f.endswith('.csv')]
+    if not files:
+        st.error(f"No CSV files found in '{data_folder}' folder.")
+        st.stop()
+        return None
+    
+    dfs = []
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    try:
         for i, f in enumerate(files):
-            dfs.append(pd.read_csv(os.path.join(data_folder, f)))
+            status_text.text(f"Loading {f}... ({i+1}/{len(files)})")
+            file_path = os.path.join(data_folder, f)
+            dfs.append(pd.read_csv(file_path))
             progress_bar.progress((i + 1) / len(files))
+        
+        status_text.text("Combining datasets...")
         df = pd.concat(dfs, ignore_index=True)
         progress_bar.empty()
+        status_text.empty()
         return df
-    else:
-        st.error(f"Data folder '{data_folder}' not found! Please upload it to your repo.")
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
         st.stop()
+        return None
 
 with st.spinner("Loading data..."):
     df = load_data()
+    if df is None:
+        st.stop()
 
 # -----------------------------
 # Key Metrics
@@ -95,7 +111,7 @@ if "Day" in df.columns:
         title="Orders by Day of Week",
         labels={"Day": "Day of Week", "count": "Number of Orders"}
     )
-    col1.plotly_chart(fig_dow, use_container_width=True)
+    col1.plotly_chart(fig_dow, width='stretch')
 
 # Orders by hour of day
 if "order_hour_of_day" in df.columns:
@@ -105,7 +121,7 @@ if "order_hour_of_day" in df.columns:
         title="Orders by Hour of Day",
         labels={"order_hour_of_day": "Hour of Day", "count": "Number of Orders"}
     )
-    col2.plotly_chart(fig_hour, use_container_width=True)
+    col2.plotly_chart(fig_hour, width='stretch')
 
 st.markdown("---")
 
@@ -122,7 +138,7 @@ fig_top = px.bar(
     top_products, x="Count", y="Product Name",
     orientation="h", title="Top 10 Ordered Products"
 )
-col1.plotly_chart(fig_top, use_container_width=True)
+col1.plotly_chart(fig_top, width='stretch')
 
 # Orders by department
 dept_counts = df["department"].value_counts().reset_index()
@@ -131,7 +147,70 @@ fig_dept = px.pie(
     dept_counts, names="Department", values="Count",
     title="Orders by Department"
 )
-col2.plotly_chart(fig_dept, use_container_width=True)
+col2.plotly_chart(fig_dept, width='stretch')
+
+# Top 10 Products Heatmap
+st.subheader("🔥 Top 10 Products Heatmap")
+top_10_product_names = df["product_name"].value_counts().head(10).index.tolist()
+top_10_df = df[df["product_name"].isin(top_10_product_names)]
+
+if "Day" in df.columns:
+    # Heatmap: Top 10 Products by Day of Week
+    heatmap_top_products = top_10_df.groupby(["product_name", "Day"]).size().reset_index(name="count")
+    heatmap_top_pivot = heatmap_top_products.pivot(index="product_name", columns="Day", values="count").fillna(0)
+    
+    # Sort products by total count (descending)
+    heatmap_top_pivot['total'] = heatmap_top_pivot.sum(axis=1)
+    heatmap_top_pivot = heatmap_top_pivot.sort_values('total', ascending=False).drop('total', axis=1)
+    
+    fig_top_heatmap = px.imshow(
+        heatmap_top_pivot,
+        labels=dict(x="Day of Week", y="Product", color="Number of Orders"),
+        title="Top 10 Products: Orders by Day of Week",
+        aspect="auto",
+        color_continuous_scale="YlOrRd",
+        text_auto=True
+    )
+    fig_top_heatmap.update_layout(height=500)
+    st.plotly_chart(fig_top_heatmap, width='stretch')
+elif "order_hour_of_day" in df.columns:
+    # Heatmap: Top 10 Products by Hour of Day
+    heatmap_top_products = top_10_df.groupby(["product_name", "order_hour_of_day"]).size().reset_index(name="count")
+    heatmap_top_pivot = heatmap_top_products.pivot(index="product_name", columns="order_hour_of_day", values="count").fillna(0)
+    
+    # Sort products by total count (descending)
+    heatmap_top_pivot['total'] = heatmap_top_pivot.sum(axis=1)
+    heatmap_top_pivot = heatmap_top_pivot.sort_values('total', ascending=False).drop('total', axis=1)
+    
+    fig_top_heatmap = px.imshow(
+        heatmap_top_pivot,
+        labels=dict(x="Hour of Day", y="Product", color="Number of Orders"),
+        title="Top 10 Products: Orders by Hour of Day",
+        aspect="auto",
+        color_continuous_scale="YlOrRd",
+        text_auto=True
+    )
+    fig_top_heatmap.update_layout(height=500)
+    st.plotly_chart(fig_top_heatmap, width='stretch')
+elif "department" in df.columns:
+    # Heatmap: Top 10 Products by Department
+    heatmap_top_products = top_10_df.groupby(["product_name", "department"]).size().reset_index(name="count")
+    heatmap_top_pivot = heatmap_top_products.pivot(index="product_name", columns="department", values="count").fillna(0)
+    
+    # Sort products by total count (descending)
+    heatmap_top_pivot['total'] = heatmap_top_pivot.sum(axis=1)
+    heatmap_top_pivot = heatmap_top_pivot.sort_values('total', ascending=False).drop('total', axis=1)
+    
+    fig_top_heatmap = px.imshow(
+        heatmap_top_pivot,
+        labels=dict(x="Department", y="Product", color="Number of Orders"),
+        title="Top 10 Products: Orders by Department",
+        aspect="auto",
+        color_continuous_scale="YlOrRd",
+        text_auto=True
+    )
+    fig_top_heatmap.update_layout(height=500)
+    st.plotly_chart(fig_top_heatmap, width='stretch')
 
 st.markdown("---")
 
@@ -152,7 +231,7 @@ if "reordered" in df.columns:
         title="Reorder Rate by Department",
         labels={"department": "Department", "reordered": "Reorder Rate"}
     )
-    st.plotly_chart(fig_reorder, use_container_width=True)
+    st.plotly_chart(fig_reorder, width='stretch')
 
     # -----------------------------
     # Top Reordered Products
@@ -163,7 +242,7 @@ if "reordered" in df.columns:
         top_reordered, x="Reorder Count", y="Product Name",
         orientation="h", title="Top 10 Reordered Products"
     )
-    st.plotly_chart(fig_top_reordered, use_container_width=True)
+    st.plotly_chart(fig_top_reordered, width='stretch')
 
 st.markdown("---")
 
@@ -182,7 +261,7 @@ fig_top_users = px.bar(
     top_users, x="Orders", y="User ID",
     orientation="h", title="Top 10 Busiest Users"
 )
-st.plotly_chart(fig_top_users, use_container_width=True)
+st.plotly_chart(fig_top_users, width='stretch')
 
 # Order Heatmap (Day vs Hour)
 if "Day" in df.columns and "order_hour_of_day" in df.columns:
@@ -193,7 +272,7 @@ if "Day" in df.columns and "order_hour_of_day" in df.columns:
         labels=dict(x="Hour of Day", y="Day", color="Number of Orders"),
         title="Order Heatmap by Day & Hour"
     )
-    st.plotly_chart(fig_heatmap, use_container_width=True)
+    st.plotly_chart(fig_heatmap, width='stretch')
 
 # Orders table
 table_cols = [
@@ -226,7 +305,7 @@ fig_table = go.Figure(data=[go.Table(
                fill_color='black', align='left', font=dict(color='white'))
 )])
 fig_table.update_layout(title='Orders Table', paper_bgcolor='black')
-st.plotly_chart(fig_table, use_container_width=True)
+st.plotly_chart(fig_table, width='stretch')
 
 st.markdown("---")
 
