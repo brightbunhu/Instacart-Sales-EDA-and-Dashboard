@@ -12,7 +12,7 @@ st.title("🛒 Instacart Dataset Dashboard")
 
 @st.cache_data
 def load_data():
-    data_folder = "data/data"
+    data_folder = "data"
     files = [f for f in os.listdir(data_folder) if f.endswith('.csv')]
     dfs = []
     progress_bar = st.progress(0)
