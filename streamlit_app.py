@@ -18,7 +18,6 @@ st.title("🛒 Instacart Dataset Dashboard")
 def load_data():
     data_folder = "data"
     
-    # Check if local data folder exists
     if os.path.exists(data_folder):
         files = [f for f in os.listdir(data_folder) if f.endswith('.csv')]
         if not files:
@@ -141,12 +140,10 @@ st.markdown("---")
 # -----------------------------
 st.header("🔁 Reordering Behavior")
 
-# Overall reorder rate
 if "reordered" in df.columns:
     reorder_rate = df["reordered"].mean() * 100
     st.metric("Overall Reorder Rate", f"{reorder_rate:.2f}%")
 
-    # Reorder rate by department
     reorder_by_dept = df.groupby("department")["reordered"].mean().reset_index()
     reorder_by_dept = reorder_by_dept.sort_values("reordered", ascending=False)
     fig_reorder = px.bar(
@@ -157,6 +154,17 @@ if "reordered" in df.columns:
     )
     st.plotly_chart(fig_reorder, use_container_width=True)
 
+    # -----------------------------
+    # Top Reordered Products
+    # -----------------------------
+    top_reordered = df[df["reordered"] == 1]["product_name"].value_counts().head(10).reset_index()
+    top_reordered.columns = ["Product Name", "Reorder Count"]
+    fig_top_reordered = px.bar(
+        top_reordered, x="Reorder Count", y="Product Name",
+        orientation="h", title="Top 10 Reordered Products"
+    )
+    st.plotly_chart(fig_top_reordered, use_container_width=True)
+
 st.markdown("---")
 
 # -----------------------------
@@ -166,6 +174,26 @@ st.header("👥 User Behavior Insights")
 
 avg_order_per_customer = df['order_id'].nunique() / df['user_id'].nunique()
 st.metric("Avg Orders Per Customer", f"{avg_order_per_customer:.2f}")
+
+# Busiest Users
+top_users = df["user_id"].value_counts().head(10).reset_index()
+top_users.columns = ["User ID", "Orders"]
+fig_top_users = px.bar(
+    top_users, x="Orders", y="User ID",
+    orientation="h", title="Top 10 Busiest Users"
+)
+st.plotly_chart(fig_top_users, use_container_width=True)
+
+# Order Heatmap (Day vs Hour)
+if "Day" in df.columns and "order_hour_of_day" in df.columns:
+    heatmap_data = df.groupby(["Day", "order_hour_of_day"]).size().reset_index(name="count")
+    heatmap_pivot = heatmap_data.pivot(index="Day", columns="order_hour_of_day", values="count").fillna(0)
+    fig_heatmap = px.imshow(
+        heatmap_pivot, text_auto=True,
+        labels=dict(x="Hour of Day", y="Day", color="Number of Orders"),
+        title="Order Heatmap by Day & Hour"
+    )
+    st.plotly_chart(fig_heatmap, use_container_width=True)
 
 # Orders table
 table_cols = [
