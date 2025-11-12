@@ -84,7 +84,7 @@ with col1:
         title="Orders by Day of Week",
         labels={"Day": "Day of Week", "count": "Number of Orders"}
     )
-    st.plotly_chart(fig_dow, use_container_width=True)
+    st.plotly_chart(fig_dow, width='stretch')
 
 # Orders by Time of day
 hour_counts = df.groupby("order_hour_bins").size().reset_index(name="count")
@@ -94,7 +94,7 @@ with col2:
         title="Orders by Hour of Day",
         labels={"order_hour_bins": "Hour of Day", "count": "Number of Orders"}
     )
-    st.plotly_chart(fig_hour, use_container_width=True)
+    st.plotly_chart(fig_hour, width='stretch')
 
 st.markdown("---")
 
@@ -106,7 +106,7 @@ fig_hour = px.line(
     title="Orders by Hour of Day",
     labels={"order_hour_of_day": "Hour of Day", "count": "Number of Orders"}
 )
-st.plotly_chart(fig_hour, use_container_width=True)
+st.plotly_chart(fig_hour, width='stretch')
 
 st.markdown("---")
 
@@ -125,7 +125,7 @@ with col1:
         top_products, x="Count", y="Product Name",
         orientation="h", title="Top 10 Ordered Products"
     )
-    st.plotly_chart(fig_top, use_container_width=True)
+    st.plotly_chart(fig_top, width='stretch')
 
 # Orders by department
 dept_counts = df["department"].value_counts().reset_index()
@@ -135,7 +135,7 @@ with col2:
         dept_counts, names="Department", values="Count",
         title="Orders by Department"
     )
-    st.plotly_chart(fig_dept, use_container_width=True)
+    st.plotly_chart(fig_dept, width='stretch')
 
 st.markdown("---")
 
@@ -159,7 +159,7 @@ fig_reorder = px.bar(
     title="Reorder Rate by Department",
     labels={"department": "Department", "reordered": "Reorder Rate"},
 )
-st.plotly_chart(fig_reorder, use_container_width=True)
+st.plotly_chart(fig_reorder, width='stretch')
 
 st.markdown("---")
 
